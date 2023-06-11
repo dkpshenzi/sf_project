@@ -3,7 +3,7 @@ from uuid import uuid4
 import time
 import os
 import Astar
-
+#nothing
 SERVER_URL  = os.environ.get("sf-judge-server") or "http://127.0.0.1:5555"
 USERNAME = "算法挑战赛-AI平台"
 SUBMISSION_ID = str(uuid4())
