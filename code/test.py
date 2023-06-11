@@ -8,8 +8,6 @@ SERVER_URL  = os.environ.get("sf-judge-server") or "http://127.0.0.1:5555"
 USERNAME = "算法挑战赛-AI平台"
 SUBMISSION_ID = str(uuid4())
 
-### 
-
 # 事例指令
 ACTIONS_SEQ = [
     [{"type":"PICKUP","dir":"RIGHT"},{"type":"PICKUP","dir":"LEFT"}],
