@@ -24,8 +24,6 @@ ACTIONS_SEQ = [
     [{"type":"DELIVERY","dir":"RIGHT"},{"type":"STAY"}]
 ]
 
-### 
-
 # api设置
 GAMELOAD = 'create_submission'
 MAPSTART = 'start'
