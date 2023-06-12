@@ -3,6 +3,7 @@ from uuid import uuid4
 import time
 import os
 import Astar
+import Distribution
 
 SERVER_URL  = os.environ.get("sf-judge-server") or "http://127.0.0.1:5555"
 USERNAME = "算法挑战赛-AI平台"
@@ -126,7 +127,7 @@ if __name__ == "__main__":
         
         # 处理地图数据
         # 包括规划路线
-        
+        agvs = Distribution.distribute()
         
         # 输入指令部分
         # 输入指令，每个指令输入完成后都会有一个新的回应，同时指令可以同时下达给四个机器人

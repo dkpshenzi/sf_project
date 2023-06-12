@@ -2,39 +2,89 @@ import numpy as np
 
 # 节点类
 class Node:
-    def __init__(self,position):
+    def __init__(self,position,parent=None):
+        """节点类的初始函数
+
+        Args:
+            position (_type_): 坐标
+            parent (_type_, optional): 父节点，方便回溯. Defaults to None.
+        """
         self.position = position
-        self.next_direction
+        # 父节点
+        self.parent = parent
         # 起始节点到达当前节点的代价
         self.g = 0
         # 当前节点到目标节点的代价
         self.h = 0
         # 总代价
         self.f = 0
+        # 向子节点的方向
+        self.next_direction = None
     def get_f(self):
+        """计算总代价
+        """
         self.f = self.g + self.h
         
 class Astar:
     def __init__(self,grid):
+        """Astar算法的初始函数
+
+        Args:
+            grid (list): 对地图栅格化的地图表示
+            
+        Attri:
+            gap : 网格地图的间隔
+            grid : 网格地图
+        """
         # 改用网格地图
         self.gap = 1
         self.grid = grid
+        # 定义四个方向
+        self.directions = {'RIGHT':(self.gap,0),'UP':(0,self.gap),'LEFT':(-self.gap,0),'DOWN':(0,-self.gap)}
         
-    # 启发函数
     def inspire(self,neighbor_node,goal_node):
+        """启发函数
+
+        Args:
+            neighbor_node (_type_): 邻居节点
+            goal_node (_type_): 目标节点
+
+        Returns:
+            _type_: 返回h代价
+        """
         # 使用曼哈顿距离
         dx = abs(neighbor_node[0]-goal_node[0])
         dy = abs(neighbor_node[1]-goal_node[1])
         return dx + dy
     
-    # 路径规划
+    def get_direction(self,current_node,parent_node):
+        """获得父节点如何到子节点
+
+        Args:
+            current_node (_type_): 当前节点
+            parent_node (_type_): 父节点
+
+        Returns:
+            _type_: 返回方向
+        """
+        direction = current_node.position - parent_node.position
+        for key,value in self.directions.items():
+            if direction == value:
+                return key
+    
     def path_planning(self,start,goal):
+        """路径规划
+
+        Args:
+            start (_type_): 起始坐标
+            goal (_type_): 终点坐标
+
+        Returns:
+            _type_: 返回的是路径节点的列表
+        """
         # 获取网格的行数和列数
         rows = len(self.grid)
         cols = len(self.grid[0])
-        
-        # 定义四个方向的移动
-        directions = [(self.gap,0,'RIGHT'),(0,self.gap,'UP'),(-self.gap,0,'LEFT'),(0,-self.gap,'DOWN')]
         
         # 创建起始节点和目标节点
         start_node = Node(start)
@@ -59,15 +109,19 @@ class Astar:
             if current_node.position == goal_node.position:
                 path = []
                 while current_node:
-                    path.append(current_node.position)
+                    path.append(current_node)
+                    # 如果父节点存在的话，就设置父节点的下一个方向
+                    if current_node.parent:
+                        next_direction = self.get_direction(current_node,current_node.parent)
+                        current_node.parent.next_direction = next_direction
                     current_node = current_node.parent
                 # 翻转路径
                 return path[::-1]
             
             # 遍历方向
-            for direction in directions:
+            for direction in self.directions.values():
                 # 计算相邻节点的位置
-                neighbor_position = current_node.position + direction[:2]
+                neighbor_position = current_node.position + direction
                 
                 # 忽略超出边界的点
                 if(
@@ -83,7 +137,31 @@ class Astar:
                     continue
                 
                 # 创建相邻节点对象
-                neighbor_node = Node()
+                neighbor_node = Node(neighbor_position,current_node)
                 
-                # 设置父节点的方向
+                # 忽略已经在关闭列表中的点
+                if neighbor_node.position in list(map(lambda node:node.position,closed_list)):
+                    continue
+                
+                # 计算从起始节点到相邻节点的实际代价
+                # 因为走直线，所以只会加1
+                neighbor_node.g = current_node.g + 1
+                
+                # 计算相邻节点到目标节点的估计代价，用曼哈顿距离
+                neighbor_node.h = self.inspire(neighbor_node,goal_node)
+                
+                # 计算相邻节点的总代价
+                neighbor_node.get_f()
+                
+                # 如果相邻节点已经在开放列表中，且新的路径代价更大，则忽略
+                if any(
+                    neighbor_node.position == node.position and neighbor_node.g >= node.g  
+                    for node in open_list
+                ):
+                    continue
+                
+                # 将相邻节点加入开放列表
+                open_list.append(neighbor_node)
+        # 没有找到路径，则返回空列表
+        return []
         
