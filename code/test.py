@@ -38,10 +38,11 @@ def command(api,value={}):
     return data
 
 # 处理并提取地图数据，再进行输出
-def sort_map_data(mapdata):
+def sort_map_data(mapdata,is_first):
     """用于整理地图数据，输出到控制台
     arr:
         mapdata: 传入的地图字典数据
+        is_first: 是否是第一次读取地图数据
         
     return:
         map_attr: 地图元数据，宽，高，最大步数，单词决策最大时间
@@ -52,7 +53,11 @@ def sort_map_data(mapdata):
     """
     # 处理并提取地图数据，再进行输出
     value = mapdata["value"]
-    map_attr = value["map_attr"]    # 地图元信息 # 宽，高，最大步数，单次决策最大时间
+    if ty == True:
+        map_attr = value["map_attr"]    # 地图元信息 # 宽，高，最大步数，单次决策最大时间
+        width = map_attr['width']
+        height = map_attr['height']        
+        print(f'地图宽为{width}，高为{height}')
     
     map_state = value["map_state"]  # 地图状态
     agvs = map_state["agvs"]    # 机器人状态    # id,payload负载,cap
@@ -61,10 +66,6 @@ def sort_map_data(mapdata):
     map_detail = map_state["map"]   # 地图位置信息  # x,y,type,id
     # type: agvs shelf wall cargo
     walls = []   # 添加一个障碍物的列表
-    
-    width = map_attr['width']
-    height = map_attr['height']        
-    print(f'地图宽为{width}，高为{height}')
     
     # 先给所有物品的条目上坐标
     for position in map_detail:
@@ -103,8 +104,11 @@ def sort_map_data(mapdata):
         shelf_payload = shelf['payload']
         shelf_position = (shelf['x'],shelf['y'])
         print(f"货架编号：{shelf_id}，cap：{shelf_cap}，负载：{shelf_payload}，位置：{shelf_position}")
-        
-    return map_attr,agvs,cargos,shelves,walls
+    
+    if is_first:
+        return map_attr,agvs,cargos,shelves,walls
+    else:
+        return agvs,cargos,shelves,walls
         
 if __name__ == "__main__":
     # 通过对网站发送post命令来获取信息
@@ -118,7 +122,7 @@ if __name__ == "__main__":
         # 获得地图数据
         # 这个是刚刚开始的数据
         mapdata = command(MAPSTART,{"map_id":map_id})
-        map_attr,agvs,cargos,shelves,walls = sort_map_data(mapdata)
+        map_attr,agvs,cargos,shelves,walls = sort_map_data(mapdata,True)    # 这里是第一次读取地图的数据
         
         # 处理地图数据
         # 包括规划路线
