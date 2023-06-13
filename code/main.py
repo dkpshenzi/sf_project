@@ -11,7 +11,7 @@ USERNAME = "算法挑战赛-AI平台"
 SUBMISSION_ID = str(uuid4())
 
 # 事例指令
-ACTIONS_SEQ = [
+'''ACTIONS_SEQ = [
     [{"type":"PICKUP","dir":"RIGHT"},{"type":"PICKUP","dir":"LEFT"}],
     [{"type":"MOVE","dir":"RIGHT"},{"type":"MOVE","dir":"LEFT"}],
     [{"type":"MOVE","dir":"RIGHT"},{"type":"MOVE","dir":"LEFT"}],
@@ -24,7 +24,7 @@ ACTIONS_SEQ = [
     [{"type":"MOVE","dir":"RIGHT"},{"type":"DELIVERY","dir":"LEFT"}],
     [{"type":"MOVE","dir":"RIGHT"},{"type":"STAY"}],
     [{"type":"DELIVERY","dir":"RIGHT"},{"type":"STAY"}]
-]
+]'''
 
 # api设置
 GAMELOAD = 'create_submission'
@@ -155,7 +155,7 @@ if __name__ == "__main__":
         # 包括规划路线
         # agvs: id,payload,cap,(x,y),(target1,target2)
         # 这里是传入AGV_li 列表，然后改变AGV_li列表中的AGV目标
-        Distribution.distribute()
+        AGV_li = Distribution.distribute(AGV_li,cargos,shelves)
         
         # 这里是通过AGV列表中的AGV类的目标进行路径规划，总共规划两条路线
         # 得到每个机器人的一个路线
