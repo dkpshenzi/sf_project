@@ -20,11 +20,15 @@ class Node:
         self.f = 0
         # 向子节点的方向
         self.next_direction = None
+        # 是否是枢纽
+        self.is_hub = False
     def get_f(self):
         """计算总代价
         """
         self.f = self.g + self.h
-        
+    def change_into_hub(self):
+        self.is_hub = True
+    
 class Astar:
     def __init__(self,grid):
         """Astar算法的初始函数
@@ -165,3 +169,41 @@ class Astar:
         # 没有找到路径，则返回空列表
         return []
         
+def create_grids(rows,cols,start,goal,agvs,shelves,cargos,walls):
+    
+    # 0的地方代表的是空白，起点跟终点需要同时设为2
+    # 初始化地图
+    grid = []
+    for r in range(rows):
+        r_li = []
+        for c in range(cols):
+            r_li.append(0)
+        grid.append(r_li)
+        
+    # 机器人障碍物
+    for agv in agvs:
+        position = agv.position
+        grid[position[0]][position[1]] = 1
+    # 将自己本身的设置为2
+    grid[start[0]][start[1]] = 2
+    
+    # 货架障碍物
+    for shelf in shelves:
+        position = (shelf['x'],shelf['y'])
+        grid[position[0]][position[1]] = 1
+    
+    # 货物障碍物
+    for cargo in cargos:
+        position = (cargo['x'],cargo['y'])
+        grid[position[0]][position[1]] = 1
+        
+    # 障碍物
+    for wall in walls:
+        position = (wall['x'],wall['y'])
+        grid[position[0]][position[1]] = 1
+        
+    # 设置终点为0
+    grid[goal[0]][goal[1]] = 2
+    
+    # 以上便把整个地图的格式给设置好了
+    return grid

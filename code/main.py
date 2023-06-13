@@ -4,6 +4,7 @@ import time
 import os
 import Astar
 import Distribution
+import PathTrack
 
 SERVER_URL  = os.environ.get("sf-judge-server") or "http://127.0.0.1:5555"
 USERNAME = "算法挑战赛-AI平台"
@@ -30,6 +31,20 @@ GAMELOAD = 'create_submission'
 MAPSTART = 'start'
 AGVCONTROL = 'step'
 GAMEEND = 'finish_submission'
+
+# 类的设置
+class AGV:
+    def __init__(self,agvid,payload,cap,position):
+        self.id = agvid # id
+        self.payload = None # 负载
+        self.cap = 1    # 容积
+        self.position = ()
+        self.target = ()
+        self.path = []
+    def update(self,payload,cap,position):
+        self.payload = payload
+        self.cap = cap
+        self.position = position
 
 def command(api,value={}):
     resp = requests.post(f"{SERVER_URL}/{api}",json=value)
@@ -90,6 +105,9 @@ def sort_map_data(mapdata,is_first):
         agv_payload = agv['payload']
         agv_cap = agv['cap']
         agv_position = (agv['x'],agv['y'])
+        if is_first:
+            new_agv = AGV(agv_id,agv_payload,agv_cap,agv_position)
+            AGV_li.append(new_agv)
         print(f'机器人编号：{agv_id}，负载：{agv_payload}，cap：{agv_cap}，位置：{agv_position}')
     
     for cargo in cargos:
@@ -119,29 +137,65 @@ if __name__ == "__main__":
 
     # 每个地图展开
     for map_id in data['value']['maps']:
+        # 每张地图开始初始化机器人列表
+        AGV_li = []
+        
         # 指定一个地图然后开始比赛
         # 获得地图数据
         # 这个是刚刚开始的数据
         mapdata = command(MAPSTART,{"map_id":map_id})
+        # 不仅仅得到地图的数据，第一次读取地图数据还会得到机器人的类列表
         map_attr,agvs,cargos,shelves,walls = sort_map_data(mapdata,True)    # 这里是第一次读取地图的数据
+        
+        # 得到长和宽
+        rows = map_attr['height']
+        cols = map_attr['width']
         
         # 处理地图数据
         # 包括规划路线
-        agvs = Distribution.distribute()
+        # agvs: id,payload,cap,(x,y),(target1,target2)
+        # 这里是传入AGV_li 列表，然后改变AGV_li列表中的AGV目标
+        Distribution.distribute()
         
-        # 输入指令部分
-        # 输入指令，每个指令输入完成后都会有一个新的回应，同时指令可以同时下达给四个机器人
-        # 同时这里也需要判断什么时候完成
-        for actions in ACTIONS_SEQ:
-            try:
-                print('actions:', actions)
-                # 输入指令部分
-                data = command(AGVCONTROL,{"map_id": map_id,"actions": actions})
-                if data["value"]["done"]:
-                    print ('done:', data["value"]["done"])
-                    break
-            except AssertionError:
-                print("assert error occur")
+        # 这里是通过AGV列表中的AGV类的目标进行路径规划，总共规划两条路线
+        # 得到每个机器人的一个路线
+        # 首先循环每个机器人的目标
+        for agv in AGV_li:
+            target1 = agv.target[0]
+            target2 = agv.target[1]
+            
+            # 首先地图栅格化
+            grid1 = Astar.create_grids(rows,cols,agv.position,target1,AGV_li,shelves,cargos,walls)
+            grid2 = Astar.create_grids(rows,cols,agv.position,target2,AGV_li,shelves,cargos,walls)
+            
+            # 实例化Astar
+            a1 = Astar.Astar(grid1)
+            a2 = Astar.Astar(grid2)
+            
+            # 进行路径规划
+            path1 = a1.path_planning(agv.position,target1)
+            path2 = a2.path_planning(agv.position,target2)
+            
+            # 将路径给回机器人
+            agv.path[0] = path1
+            agv.path[1] = path2
+            
+        while True:
+            # 指令列表
+            command_li = []
+            
+            # 一张地图内，指令的输出
+            # 首先输出指令，然后获取是否抵达目的地
+            for agv in AGV_li:
+                pathTrack = PathTrack.PathTrack(agv)
+                command = pathTrack.path_tracking()
+                command_li.append(command)
+            
+            # 开始输出指令
+            data = command(AGVCONTROL,{"map_id": map_id,"actions": command_li})
+            
+            # 判断是否已经完成地图
+            if data["value"]["done"]:
                 break
     
     # 输入结束指令
