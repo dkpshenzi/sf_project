@@ -37,6 +37,8 @@ class PathTrack:
                     return node,True
                 else:
                     return node,False
+                
+        return None,None
     
     def path_tracking(self):
         if self.ty == P:
@@ -45,8 +47,11 @@ class PathTrack:
         elif self.ty == D:
             path = self.agv.path[1]
             
+        '''for node in path:
+            print(f'节点：{node.position}，方向：{node.next_direction}')'''
+            
         # 找到点，并且判断是否已经是最后一步
-        node,is_last = self.find_node(self.agv.position)
+        node,is_last = self.find_node(path,self.agv.position)
         
         # 取出下一步的方向
         direction = node.next_direction

@@ -36,10 +36,10 @@ GAMEEND = 'finish_submission'
 class AGV:
     def __init__(self,agvid,payload,cap,position):
         self.id = agvid # id
-        self.payload = None # 负载
-        self.cap = 1    # 容积
-        self.position = ()
-        self.target = ()
+        self.payload = payload # 负载
+        self.cap = cap    # 容积
+        self.position = position
+        self.target = []
         self.path = []
     def update(self,payload,cap,position):
         self.payload = payload
@@ -87,16 +87,16 @@ def sort_map_data(mapdata,is_first):
     for position in map_detail:
         ty = position['type']
         if ty == 'agv':
-            agvs[position['id']]['x'] = position['x']
-            agvs[position['id']]['y'] = position['y']
+            agvs[position['id']]['x'] = position['x'] - 1 
+            agvs[position['id']]['y'] = position['y'] - 1 
         elif ty == 'cargo':
-            cargos[position['id']]['x'] = position['x']
-            cargos[position['id']]['y'] = position['y']
+            cargos[position['id']]['x'] = position['x'] - 1 
+            cargos[position['id']]['y'] = position['y'] - 1
         elif ty == 'shelf':
-            shelves[position['id']]['x'] = position['x']
-            shelves[position['id']]['y'] = position['y']
+            shelves[position['id']]['x'] = position['x'] - 1
+            shelves[position['id']]['y'] = position['y'] - 1
         elif ty == 'wall':
-            wall = {"x":position['x'],'y':position['y']}
+            wall = {"x":position['x'] - 1,'y':position['y'] - 1}
             walls.append(wall)
     
     # 然后再逐个提取信息
@@ -137,6 +137,8 @@ if __name__ == "__main__":
 
     # 每个地图展开
     for map_id in data['value']['maps']:
+        print(f'当前地图为：{map_id}')
+        
         # 每张地图开始初始化机器人列表
         AGV_li = []
         
@@ -155,7 +157,8 @@ if __name__ == "__main__":
         # 包括规划路线
         # agvs: id,payload,cap,(x,y),(target1,target2)
         # 这里是传入AGV_li 列表，然后改变AGV_li列表中的AGV目标
-        AGV_li = Distribution.distribute(AGV_li,cargos,shelves)
+        dis = Distribution.Distribution(AGV_li,cargos,shelves)
+        AGV_li = dis.target_finding()
         
         # 这里是通过AGV列表中的AGV类的目标进行路径规划，总共规划两条路线
         # 得到每个机器人的一个路线
@@ -176,11 +179,17 @@ if __name__ == "__main__":
             path1 = a1.path_planning(agv.position,target1)
             path2 = a2.path_planning(agv.position,target2)
             
-            # 将路径给回机器人
-            agv.path[0] = path1
-            agv.path[1] = path2
+            # 清空机器人路径
+            agv.path = []
             
-        while True:
+            # 将路径给回机器人
+            agv.path.append(path1)
+            agv.path.append(path2)
+            
+        # 初始化步数
+        step = 0
+            
+        while True and step <= 100:
             # 指令列表
             command_li = []
             
@@ -197,6 +206,8 @@ if __name__ == "__main__":
             # 判断是否已经完成地图
             if data["value"]["done"]:
                 break
+            
+            step += 1
     
     # 输入结束指令
     data = command(GAMEEND)

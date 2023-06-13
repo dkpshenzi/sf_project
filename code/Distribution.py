@@ -11,7 +11,7 @@ class Distribution:
         self.cargos = cargos
         self.shelves = shelves
         
-    def cal_distance(p1,p2):
+    def cal_distance(self,p1,p2):
         return np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
     def target_finding(self):
@@ -33,12 +33,15 @@ class Distribution:
                     distance = dis
                     task = cargo
 
+            # 初始化机器人的目标
+            agv.target = []
+
             # 找到最近的任务之后开始赋值
-            agv.target[0] = task.position
+            agv.target.append(task.position)
             # 然后找到任务对应的货架
             for shelf in shelves:
                 if shelf.index == task.index:
-                    agv.target[1] = shelf.position
+                    agv.target.append(shelf.position)
                     break
                 
         return self.agvs

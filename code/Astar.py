@@ -57,8 +57,8 @@ class Astar:
             _type_: 返回h代价
         """
         # 使用曼哈顿距离
-        dx = abs(neighbor_node[0]-goal_node[0])
-        dy = abs(neighbor_node[1]-goal_node[1])
+        dx = abs(neighbor_node.position[0]-goal_node.position[0])
+        dy = abs(neighbor_node.position[1]-goal_node.position[1])
         return dx + dy
     
     def get_direction(self,current_node,parent_node):
@@ -183,27 +183,27 @@ def create_grids(rows,cols,start,goal,agvs,shelves,cargos,walls):
     # 机器人障碍物
     for agv in agvs:
         position = agv.position
-        grid[position[0]][position[1]] = 1
+        grid[position[1]][position[0]] = 1
     # 将自己本身的设置为2
-    grid[start[0]][start[1]] = 2
+    grid[start[1]][start[0]] = 2
     
     # 货架障碍物
     for shelf in shelves:
         position = (shelf['x'],shelf['y'])
-        grid[position[0]][position[1]] = 1
+        grid[position[1]][position[0]] = 1
     
     # 货物障碍物
     for cargo in cargos:
         position = (cargo['x'],cargo['y'])
-        grid[position[0]][position[1]] = 1
+        grid[position[1]][position[0]] = 1
         
     # 障碍物
     for wall in walls:
         position = (wall['x'],wall['y'])
-        grid[position[0]][position[1]] = 1
+        grid[position[1]][position[0]] = 1
         
     # 设置终点为0
-    grid[goal[0]][goal[1]] = 2
+    grid[goal[1]][goal[0]] = 2
     
     # 以上便把整个地图的格式给设置好了
     return grid

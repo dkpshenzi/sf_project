@@ -204,6 +204,54 @@
                 "y": 5,
                 "type": "shelf",
                 "id": 7
+            },
+            {
+                "id": 0,
+                "type": "cargo",
+                "x": 2,
+                "y": 7
+            },
+            {
+                "id": 1,
+                "type": "cargo",
+                "x": 4,
+                "y": 7
+            },
+            {
+                "id": 2,
+                "type": "cargo",
+                "x": 6,
+                "y": 7
+            },
+            {
+                "id": 3,
+                "type": "cargo",
+                "x": 8,
+                "y": 7
+            },
+            {
+                "id": 4,
+                "type": "cargo",
+                "x": 2,
+                "y": 8
+            },
+            {
+                "id": 5,
+                "type": "cargo",
+                "x": 4,
+                "y": 8
+            },
+            {
+                "id": 6,
+                "type": "cargo",
+                "target": 6,
+                "weight": 8
+            },
+            {
+                "id": 7,
+                "type": "cargo",
+                "target": 8,
+                "weight": 8
             }
         ]
     }
