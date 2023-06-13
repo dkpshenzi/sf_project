@@ -69,7 +69,7 @@ def sort_map_data(mapdata,is_first):
     """
     # 处理并提取地图数据，再进行输出
     value = mapdata["value"]
-    if ty == True:
+    if is_first:
         map_attr = value["map_attr"]    # 地图元信息 # 宽，高，最大步数，单次决策最大时间
         width = map_attr['width']
         height = map_attr['height']        
