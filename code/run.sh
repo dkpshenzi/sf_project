@@ -1,5 +1,5 @@
 sleep 3
-python3 test.py
+python3 main.py
 
 #在java目录下运行mvn clean package -f pom.xml即可生成jar包
 #java -jar ./java/target/player-1.0-SNAPSHOT.jar
