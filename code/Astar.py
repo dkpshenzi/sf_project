@@ -29,6 +29,17 @@ class Node:
     def change_into_hub(self):
         self.is_hub = True
     
+def print_path(node):
+    path = []
+    while node:
+        path.append(node)
+        node = node.parent
+    path[::-1]
+    if len(path) >= 4:
+        for p in path:
+            print(p.position,end='')
+    print()
+    
 class Astar:
     def __init__(self,grid):
         """Astar算法的初始函数
@@ -44,7 +55,8 @@ class Astar:
         self.gap = 1
         self.grid = grid
         # 定义四个方向
-        self.directions = {'RIGHT':(self.gap,0),'UP':(0,self.gap),'LEFT':(-self.gap,0),'DOWN':(0,-self.gap)}
+        # 添加一个原地的方向，让其能够停留在原地
+        self.directions = {'STAY':(0,0),'RIGHT':(self.gap,0),'UP':(0,self.gap),'LEFT':(-self.gap,0),'DOWN':(0,-self.gap)}
         
     def inspire(self,neighbor_node,goal_node):
         """启发函数
@@ -71,17 +83,18 @@ class Astar:
         Returns:
             _type_: 返回方向
         """
-        direction = current_node.position - parent_node.position
+        direction = (current_node.position[0] - parent_node.position[0],current_node.position[1] - parent_node.position[1])
         for key,value in self.directions.items():
             if direction == value:
                 return key
     
-    def path_planning(self,start,goal):
+    def path_planning(self,start,goal,restrict=None):
         """路径规划
 
         Args:
             start (_type_): 起始坐标
             goal (_type_): 终点坐标
+            restrict : 约束 (position,tick)
 
         Returns:
             _type_: 返回的是路径节点的列表
@@ -90,24 +103,38 @@ class Astar:
         rows = len(self.grid)
         cols = len(self.grid[0])
         
+        # print_grid(self.grid,'传输进来的地图')
+        
+        # print(f'行数y:{rows}')
+        # print(f'列数x:{cols}')
+        # print(f'起点坐标{start}')
+        # print(f'终点坐标{goal}')
+        
         # 创建起始节点和目标节点
         start_node = Node(start)
         goal_node = Node(goal)
         
         # 创建开放列表和关闭列表
         open_list = [start_node]
-        closed_list = []
+        # closed_list = []
+        
+        # print(f'目标节点坐标{goal_node.position}')
         
         # 循环直到找到路径或者开放列表为空
         while open_list:
             # 从开放列表中找到代价最小的点
             current_node = min(open_list,key=lambda node:node.f)
             
+            # 输出当前点的路径
+            print_path(current_node)
+            
             # 将当前节点从开放列表中移除
             open_list.remove(current_node)
             
             # 将当前节点加入关闭列表
-            closed_list.append(current_node)
+            # closed_list.append(current_node)
+            
+            # print(f'当前节点坐标{current_node.position}')
             
             # 到达目标节点，构建路径并返回
             if current_node.position == goal_node.position:
@@ -120,39 +147,60 @@ class Astar:
                         current_node.parent.next_direction = next_direction
                     current_node = current_node.parent
                 # 翻转路径
+                # print('返回正确路径')
                 return path[::-1]
+            
+            # print('进行了一次开放列表查询')
             
             # 遍历方向
             for direction in self.directions.values():
                 # 计算相邻节点的位置
-                neighbor_position = current_node.position + direction
+                neighbor_position = (current_node.position[0] + direction[0],current_node.position[1] + direction[1])
                 
                 # 忽略超出边界的点
                 if(
-                    neighbor_position[0] < self.gap
-                    or neighbor_position[0] >= rows * self.gap
-                    or neighbor_position[1] < self.gap
-                    or neighbor_position[1] >= cols * self.gap
+                    neighbor_position[0] < 0
+                    or neighbor_position[0] >= cols
+                    or neighbor_position[1] < 0
+                    or neighbor_position[1] >= rows
                 ):
+                    # print(f'忽略了{neighbor_position}')
                     continue
                 
                 # 忽略障碍物，货架，其他机器人节点
-                if self.grid[neighbor_position[0]][neighbor_position[1]] == 1:
+                if self.grid[neighbor_position[1]][neighbor_position[0]] == 1:
+                    # print(f'忽略障碍物节点{neighbor_position}')
                     continue
                 
                 # 创建相邻节点对象
                 neighbor_node = Node(neighbor_position,current_node)
                 
                 # 忽略已经在关闭列表中的点
-                if neighbor_node.position in list(map(lambda node:node.position,closed_list)):
-                    continue
+                # 但是允许与自己坐标相同的点
+                '''if neighbor_node.position in list(map(lambda node:node.position,closed_list)) and neighbor_node.position != current_node.position:
+                    # print(f'忽略了在关闭列表中的节点{neighbor_position}')
+                    continue'''
+                
+                # print(f'邻居节点坐标{neighbor_position}')
                 
                 # 计算从起始节点到相邻节点的实际代价
-                # 因为走直线，所以只会加1
+                # 因为走直线，所以只会加1  
                 neighbor_node.g = current_node.g + 1
                 
+                # 这里开始判断约束条件
+                # 如果这个点是刚好在这个时间，并且是这个点则跳过
+                is_continue = False
+                if restrict:
+                    for res in restrict:
+                        if neighbor_node.g == res['tick'] and neighbor_node.position == res['position'].position:
+                            is_continue = True
+                            break
+                if is_continue:
+                    continue
+                
                 # 计算相邻节点到目标节点的估计代价，用曼哈顿距离
-                neighbor_node.h = self.inspire(neighbor_node,goal_node)
+                # neighbor_node.h = self.inspire(neighbor_node,goal_node)
+                neighbor_node.h = 0
                 
                 # 计算相邻节点的总代价
                 neighbor_node.get_f()
@@ -169,6 +217,12 @@ class Astar:
         # 没有找到路径，则返回空列表
         return []
         
+def print_grid(grid,context):
+    newg = grid[-1::-1]
+    print(context)
+    for g in newg:
+        print(g)
+    
 def create_grids(rows,cols,start,goal,agvs,shelves,cargos,walls):
     
     # 0的地方代表的是空白，起点跟终点需要同时设为2
@@ -179,31 +233,40 @@ def create_grids(rows,cols,start,goal,agvs,shelves,cargos,walls):
         for c in range(cols):
             r_li.append(0)
         grid.append(r_li)
+    # print_grid(grid,'初始地图')
         
     # 机器人障碍物
     for agv in agvs:
         position = agv.position
-        grid[position[1]][position[0]] = 1
+        grid[position[1]][position[0]] = 0
     # 将自己本身的设置为2
     grid[start[1]][start[0]] = 2
+    # print_grid(grid,'加入了机器人后的地图')
     
     # 货架障碍物
     for shelf in shelves:
         position = (shelf['x'],shelf['y'])
         grid[position[1]][position[0]] = 1
+    # print_grid(grid,'加入了货架后的地图')
     
     # 货物障碍物
-    for cargo in cargos:
-        position = (cargo['x'],cargo['y'])
-        grid[position[1]][position[0]] = 1
+    # 为判断器额外加的一个条件
+    if cargos:
+        for cargo in cargos:
+            if cargo['x'] != None:
+                position = (cargo['x'],cargo['y'])
+                grid[position[1]][position[0]] = 1
+    # print_grid(grid,'加入了货物后的地图')
         
     # 障碍物
-    for wall in walls:
-        position = (wall['x'],wall['y'])
-        grid[position[1]][position[0]] = 1
+    if walls:
+        for wall in walls:
+            position = (wall['x'],wall['y'])
+            grid[position[1]][position[0]] = 1
         
     # 设置终点为0
     grid[goal[1]][goal[0]] = 2
+    # print_grid(grid,'加入了障碍物后的地图')
     
     # 以上便把整个地图的格式给设置好了
     return grid

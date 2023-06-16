@@ -1,3 +1,4 @@
+from Astar import Node
 """
 根据机器人当前的位置来输出当前回合的指令
 """
@@ -6,6 +7,7 @@
 P = 'PICKUP'
 D = 'DELIVERY'
 M = 'MOVE'
+S = 'STAY'
 
 class PathTrack:
     def __init__(self,agv):
@@ -15,7 +17,7 @@ class PathTrack:
     def pick_or_delivery(self):
         """判断目前是pick还是delivery的状态
         """
-        if self.agv.cap == 1:
+        if self.agv.payload == None:
             # 有空余空间
             return P
         else:
@@ -41,11 +43,13 @@ class PathTrack:
         return None,None
     
     def path_tracking(self):
-        if self.ty == P:
+        '''if self.ty == P:
             # 这时将会调用第一个路线
             path = self.agv.path[0]
         elif self.ty == D:
-            path = self.agv.path[1]
+            path = self.agv.path[1]'''
+        # 调用当前的路线
+        path = self.agv.path 
             
         '''for node in path:
             print(f'节点：{node.position}，方向：{node.next_direction}')'''
@@ -60,8 +64,11 @@ class PathTrack:
             # 如果已经是最后一步，那么将执行对应的行为
             if self.ty == P:
                 return {"type":P,"dir":direction}
-            elif self.ty == D:
+            else:
                 return {"type":D,"dir":direction}
         else:
-            return {"type":M,"dir":direction}            
+            if direction == 'STAY':
+                return {"type":S}
+            else:
+                return {"type":M,"dir":direction}            
             

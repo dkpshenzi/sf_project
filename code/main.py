@@ -5,6 +5,7 @@ import os
 import Astar
 import Distribution
 import PathTrack
+import CBS
 
 SERVER_URL  = os.environ.get("sf-judge-server") or "http://127.0.0.1:5555"
 USERNAME = "算法挑战赛-AI平台"
@@ -48,7 +49,7 @@ class AGV:
 
 def command(api,value={}):
     resp = requests.post(f"{SERVER_URL}/{api}",json=value)
-    assert (resp.status_code == 200)
+    # assert (resp.status_code == 200)
     data = resp.json()
     # print (data)
     return data
@@ -87,16 +88,16 @@ def sort_map_data(mapdata,is_first):
     for position in map_detail:
         ty = position['type']
         if ty == 'agv':
-            agvs[position['id']]['x'] = position['x'] - 1 
-            agvs[position['id']]['y'] = position['y'] - 1 
+            agvs[position['id']]['x'] = position['x']
+            agvs[position['id']]['y'] = position['y'] 
         elif ty == 'cargo':
-            cargos[position['id']]['x'] = position['x'] - 1 
-            cargos[position['id']]['y'] = position['y'] - 1
+            cargos[position['id']]['x'] = position['x']
+            cargos[position['id']]['y'] = position['y']
         elif ty == 'shelf':
-            shelves[position['id']]['x'] = position['x'] - 1
-            shelves[position['id']]['y'] = position['y'] - 1
+            shelves[position['id']]['x'] = position['x']
+            shelves[position['id']]['y'] = position['y']
         elif ty == 'wall':
-            wall = {"x":position['x'] - 1,'y':position['y'] - 1}
+            wall = {"x":position['x'],'y':position['y']}
             walls.append(wall)
     
     # 然后再逐个提取信息
@@ -110,12 +111,16 @@ def sort_map_data(mapdata,is_first):
             AGV_li.append(new_agv)
         print(f'机器人编号：{agv_id}，负载：{agv_payload}，cap：{agv_cap}，位置：{agv_position}')
     
+    new_cargos = []
     for cargo in cargos:
-        cargo_id = cargo['id']
-        cargo_target = cargo['target']
-        cargo_weight = cargo['weight']
-        cargo_position = (cargo['x'],cargo['y'])
-        print(f"货物编号：{cargo_id}，目标：{cargo_target}，重量：{cargo_weight}，位置：{cargo_position}")
+        # 先判断是否存在坐标，若无坐标则去除
+        if 'x' in cargo.keys():
+            new_cargos.append(cargo)
+            cargo_id = cargo['id']
+            cargo_target = cargo['target']
+            cargo_weight = cargo['weight']
+            cargo_position = (cargo['x'],cargo['y'])
+            print(f"货物编号：{cargo_id}，目标：{cargo_target}，重量：{cargo_weight}，位置：{cargo_position}")
     
     for shelf in shelves:
         shelf_id = shelf['id']
@@ -124,10 +129,17 @@ def sort_map_data(mapdata,is_first):
         shelf_position = (shelf['x'],shelf['y'])
         print(f"货架编号：{shelf_id}，cap：{shelf_cap}，负载：{shelf_payload}，位置：{shelf_position}")
     
+    for wall in walls:
+        x = wall['x']
+        y = wall['y']
+        position = (x,y)
+        # print(f'障碍物：{position}')
+    
     if is_first:
-        return map_attr,agvs,cargos,shelves,walls
+        return map_attr,agvs,new_cargos,shelves,walls
     else:
-        return agvs,cargos,shelves,walls
+        # print(cargos)
+        return agvs,new_cargos,shelves
         
 if __name__ == "__main__":
     # 通过对网站发送post命令来获取信息
@@ -163,33 +175,14 @@ if __name__ == "__main__":
         # 这里是通过AGV列表中的AGV类的目标进行路径规划，总共规划两条路线
         # 得到每个机器人的一个路线
         # 首先循环每个机器人的目标
-        for agv in AGV_li:
-            target1 = agv.target[0]
-            target2 = agv.target[1]
-            
-            # 首先地图栅格化
-            grid1 = Astar.create_grids(rows,cols,agv.position,target1,AGV_li,shelves,cargos,walls)
-            grid2 = Astar.create_grids(rows,cols,agv.position,target2,AGV_li,shelves,cargos,walls)
-            
-            # 实例化Astar
-            a1 = Astar.Astar(grid1)
-            a2 = Astar.Astar(grid2)
-            
-            # 进行路径规划
-            path1 = a1.path_planning(agv.position,target1)
-            path2 = a2.path_planning(agv.position,target2)
-            
-            # 清空机器人路径
-            agv.path = []
-            
-            # 将路径给回机器人
-            agv.path.append(path1)
-            agv.path.append(path2)
+        # 这里只能够先完成第一阶段的一个寻路
+        cbs = CBS.CBS(rows,cols,AGV_li,shelves,cargos,walls)
+        AGV_li = cbs.solve()
             
         # 初始化步数
         step = 0
             
-        while True and step <= 100:
+        while True:
             # 指令列表
             command_li = []
             
@@ -197,15 +190,32 @@ if __name__ == "__main__":
             # 首先输出指令，然后获取是否抵达目的地
             for agv in AGV_li:
                 pathTrack = PathTrack.PathTrack(agv)
-                command = pathTrack.path_tracking()
-                command_li.append(command)
+                c = pathTrack.path_tracking()
+                command_li.append(c)
+            
+            print(command_li)
             
             # 开始输出指令
             data = command(AGVCONTROL,{"map_id": map_id,"actions": command_li})
             
+            # sort_map_data(data,False)
+            
             # 判断是否已经完成地图
-            if data["value"]["done"]:
+            if data["value"]["done"] or step > 20:
                 break
+            
+            # 首先进行数据的更新
+            agvs,cargos,shelves = sort_map_data(data,False)
+            for index,agv in enumerate(agvs):
+                a = AGV_li[index]
+                a.update(agv['payload'],agv['cap'],(agv['x'],agv['y']))
+            
+            # 这个时候再进行一次路径规划，只进行货物到货柜的路径规划
+            cbs = CBS.CBS(rows,cols,AGV_li,shelves,cargos,walls)
+            AGV_li = cbs.solve()
+            
+            print(f'完成了一次规划')
+            # raise NameError()
             
             step += 1
     
