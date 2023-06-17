@@ -103,20 +103,13 @@ class Astar:
         rows = len(self.grid)
         cols = len(self.grid[0])
         
-        # print_grid(self.grid,'传输进来的地图')
-        
-        # print(f'行数y:{rows}')
-        # print(f'列数x:{cols}')
-        # print(f'起点坐标{start}')
-        # print(f'终点坐标{goal}')
-        
         # 创建起始节点和目标节点
         start_node = Node(start)
         goal_node = Node(goal)
         
         # 创建开放列表和关闭列表
         open_list = [start_node]
-        # closed_list = []
+        closed_list = []
         
         # print(f'目标节点坐标{goal_node.position}')
         
@@ -125,16 +118,11 @@ class Astar:
             # 从开放列表中找到代价最小的点
             current_node = min(open_list,key=lambda node:node.f)
             
-            # 输出当前点的路径
-            # print_path(current_node)
-            
             # 将当前节点从开放列表中移除
             open_list.remove(current_node)
             
             # 将当前节点加入关闭列表
             # closed_list.append(current_node)
-            
-            # print(f'当前节点坐标{current_node.position}')
             
             # 到达目标节点，构建路径并返回
             if current_node.position == goal_node.position:
@@ -147,10 +135,7 @@ class Astar:
                         current_node.parent.next_direction = next_direction
                     current_node = current_node.parent
                 # 翻转路径
-                # print('返回正确路径')
                 return path[::-1]
-            
-            # print('进行了一次开放列表查询')
             
             # 遍历方向
             for direction in self.directions.values():
@@ -164,12 +149,10 @@ class Astar:
                     or neighbor_position[1] < 0
                     or neighbor_position[1] >= rows
                 ):
-                    # print(f'忽略了{neighbor_position}')
                     continue
                 
-                # 忽略障碍物，货架，其他机器人节点
+                # 忽略障碍物节点
                 if self.grid[neighbor_position[1]][neighbor_position[0]] == 1:
-                    # print(f'忽略障碍物节点{neighbor_position}')
                     continue
                 
                 # 创建相邻节点对象
@@ -180,8 +163,6 @@ class Astar:
                 '''if neighbor_node.position in list(map(lambda node:node.position,closed_list)) and neighbor_node.position != current_node.position:
                     # print(f'忽略了在关闭列表中的节点{neighbor_position}')
                     continue'''
-                
-                # print(f'邻居节点坐标{neighbor_position}')
                 
                 # 计算从起始节点到相邻节点的实际代价
                 # 因为走直线，所以只会加1  

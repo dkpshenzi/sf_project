@@ -11,7 +11,7 @@ DIRECTION = {"RIGHT":(1,0),"LEFT":(-1,0),"UP":(0,-1),"DOWN":(0,1)}
 
 class Judge:
     def __init__(self):
-        self.map_path = r'D:\Code\sf\sf_project\data\l3.json'
+        self.map_path = r'D:\Code\sf\sf_project\data\r3.json'
         # 读取文件
         with open(self.map_path,'r',encoding='utf-8') as f:
             self.all_data = json.load(f)

@@ -52,11 +52,22 @@ class PathTrack:
         path = self.agv.path 
             
         if path != []:
-            '''for node in path:
-                print(f'节点：{node.position}，方向：{node.next_direction}')'''
+            for node in path:
+                print(f'节点：{node.position}，方向：{node.next_direction}')
                 
             # 找到点，并且判断是否已经是最后一步
-            node,is_last = self.find_node(path,self.agv.position)
+            # node,is_last = self.find_node(path,self.agv.position)
+            node = path[0]
+            direction = node.next_direction
+            if direction == None:
+                return {"type":S}
+            
+            next_node = path[1]
+            try:
+                next_direction = next_node.direction
+                is_last = True
+            except:
+                is_last = True
             
             # 取出下一步的方向
             try:

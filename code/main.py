@@ -41,7 +41,7 @@ class AGV:
         self.payload = payload # 负载
         self.cap = cap    # 容积
         self.position = position
-        self.target = None
+        self.target = []
         self.path = []
         self.temp_target = []
     def update(self,payload,cap,position):
@@ -49,11 +49,35 @@ class AGV:
         self.cap = cap
         self.position = position
 
+class CARGO:
+    def __init__(self,position,target):
+        self.position = position
+        self.target = target
+    def update(self,position):
+        """更新数据
+
+        Args:
+            position (_type_): 坐标
+        """
+        self.position = position
+        
+class SHELF:
+    def __init__(self,position,index,payload):
+        self.position = position
+        self.index = index
+        self.payload = payload
+    def update(self,payload):
+        """更新数据
+
+        Args:
+            payload (_type_): 负载值
+        """
+        self.payload = payload
+
 def command(api,value={}):
     resp = requests.post(f"{SERVER_URL}/{api}",json=value)
-    # assert (resp.status_code == 200)
+    assert (resp.status_code == 200)
     data = resp.json()
-    # print (data)
     return data
 
 # 处理并提取地图数据，再进行输出
@@ -70,7 +94,8 @@ def sort_map_data(mapdata,is_first):
         shelves: 货架字典列表：id,cap,payload,position
         wall: 墙壁字典列表：x,y
     """
-    # 处理并提取地图数据，再进行输出
+    # 将全部处理过的数据制作成实例的列表
+    
     value = mapdata["value"]
     if is_first:
         map_attr = value["map_attr"]    # 地图元信息 # 宽，高，最大步数，单次决策最大时间
@@ -125,21 +150,7 @@ def sort_map_data(mapdata,is_first):
             cargo['y'] = None
         cargo_position = (cargo['x'],cargo['y'])
         print(f"货物编号：{cargo_id}，目标：{cargo_target}，重量：{cargo_weight}，位置：{cargo_position}")
-    
-    '''for shelf in shelves:
-        shelf_id = shelf['id']
-        shelf_cap = shelf['cap']
-        shelf_payload = shelf['payload']
-        shelf_position = (shelf['x'],shelf['y'])
-        print(f"货架编号：{shelf_id}，cap：{shelf_cap}，负载：{shelf_payload}，位置：{shelf_position}")'''
-    
     print()
-    
-    '''for wall in walls:
-        x = wall['x']
-        y = wall['y']
-        position = (x,y)'''
-        # print(f'障碍物：{position}')
     
     if is_first:
         return map_attr,agvs,new_cargos,shelves,walls
@@ -206,8 +217,8 @@ if __name__ == "__main__":
                 
                 pathTrack = PathTrack.PathTrack(agv)
                 c = pathTrack.path_tracking()
-                if c['type'] == 'DELIVERY' or c['type'] == 'PICKUP':
-                    agv.target.pop(0)
+                if c['type'] == 'DELIVERY':
+                    agv.target = []
                     agv.path = []
                 command_li.append(c)
             
@@ -220,7 +231,7 @@ if __name__ == "__main__":
             
             # 判断是否已经完成地图
             try:
-                if data["value"]["done"] or step > 100:
+                if data["value"]["done"] or step > 30:
                     break
             except:
                 print(f'数据为：{data}')
@@ -237,9 +248,12 @@ if __name__ == "__main__":
             # print(f'shelves:{shelves}')
             AGV_li,is_change_path = dis.target_finding()
             
-            '''for agv in AGV_li:
+            for agv in AGV_li:
                 print(f'当前目标为：{agv.target}')
-                print(f'当前路径为：{agv.path}')'''
+                print(f'当前路径为：',end='')
+                for node in agv.path:
+                    print(f'{node.position}',end='')
+                print()
             
             # 如果目标发生了改变，则需要重新规划
             # 这个时候再进行一次路径规划，只进行货物到货柜的路径规划

@@ -112,18 +112,12 @@ def sort_map_data(mapdata,is_first):
     
     for shelf in shelves:
         shelf_id = shelf['id']
-        shelf_cap = shelf['cap']
+        shelf_cap = None
         shelf_payload = shelf['payload']
         shelf_position = (shelf['x'],shelf['y'])
         print(f"货架编号：{shelf_id}，cap：{shelf_cap}，负载：{shelf_payload}，位置：{shelf_position}")
     
     print()
-    
-    for wall in walls:
-        x = wall['x']
-        y = wall['y']
-        position = (x,y)
-        # print(f'障碍物：{position}')
     
     if is_first:
         return map_attr,agvs,new_cargos,shelves,walls
@@ -219,14 +213,18 @@ if __name__ == "__main__":
             # print(f'shelves:{shelves}')
             AGV_li,is_change_path = dis.target_finding()
 
-            '''for agv in AGV_li:
+            for agv in AGV_li:
                 print(f'当前目标为：{agv.target}')
-                print(f'当前路径为：{agv.path}')'''
+                print(f'当前路径为：',end='')
+                for node in agv.path:
+                    print(f'{node.position}',end='')
+                print()
             
             # 如果目标发生了改变，则需要重新规划
             # 这个时候再进行一次路径规划，只进行货物到货柜的路径规划
-            cbs = CBS.CBS(AGV_li,shelves,cargos,map_grid)
-            AGV_li = cbs.solve()
+            if is_change_path:
+                cbs = CBS.CBS(AGV_li,shelves,cargos,map_grid)
+                AGV_li = cbs.solve()
             
             # print(f'完成了一次规划')
             
