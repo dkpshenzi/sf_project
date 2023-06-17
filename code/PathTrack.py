@@ -51,24 +51,30 @@ class PathTrack:
         # 调用当前的路线
         path = self.agv.path 
             
-        '''for node in path:
-            print(f'节点：{node.position}，方向：{node.next_direction}')'''
+        if path != []:
+            '''for node in path:
+                print(f'节点：{node.position}，方向：{node.next_direction}')'''
+                
+            # 找到点，并且判断是否已经是最后一步
+            node,is_last = self.find_node(path,self.agv.position)
             
-        # 找到点，并且判断是否已经是最后一步
-        node,is_last = self.find_node(path,self.agv.position)
-        
-        # 取出下一步的方向
-        direction = node.next_direction
-        
-        if is_last:
-            # 如果已经是最后一步，那么将执行对应的行为
-            if self.ty == P:
-                return {"type":P,"dir":direction}
-            else:
-                return {"type":D,"dir":direction}
-        else:
-            if direction == 'STAY':
+            # 取出下一步的方向
+            try:
+                direction = node.next_direction
+            except:
                 return {"type":S}
+            
+            if is_last:
+                # 如果已经是最后一步，那么将执行对应的行为
+                if self.ty == P:
+                    return {"type":P,"dir":direction}
+                else:
+                    return {"type":D,"dir":direction}
             else:
-                return {"type":M,"dir":direction}            
+                if direction == 'STAY':
+                    return {"type":S}
+                else:
+                    return {"type":M,"dir":direction}
+        else:
+            return {"type":S}            
             

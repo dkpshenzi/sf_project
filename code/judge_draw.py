@@ -8,9 +8,6 @@ class JudgeDraw:
         
         self.row = row
         self.col = col
-        # 先定好左下和右上打基础
-        # plt.scatter(-0.5,-0.5,color='white')
-        # plt.scatter(row+0.5,col+0.5,color='white')
     
     def get_pos_li(self,pos):
         position = []

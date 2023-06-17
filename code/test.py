@@ -7,26 +7,11 @@ import Distribution
 import PathTrack
 import CBS
 import judge
+import MapCreate
 
 # SERVER_URL  = os.environ.get("sf-judge-server") or "http://127.0.0.1:5555"
 USERNAME = "算法挑战赛-AI平台"
 # SUBMISSION_ID = str(uuid4())
-
-# 事例指令
-'''ACTIONS_SEQ = [
-    [{"type":"PICKUP","dir":"RIGHT"},{"type":"PICKUP","dir":"LEFT"}],
-    [{"type":"MOVE","dir":"RIGHT"},{"type":"MOVE","dir":"LEFT"}],
-    [{"type":"MOVE","dir":"RIGHT"},{"type":"MOVE","dir":"LEFT"}],
-    [{"type":"MOVE","dir":"RIGHT"},{"type":"STAY"}],
-    [{"type":"MOVE","dir":"UP"},{"type":"STAY"}],
-    [{"type":"STAY"},{"type":"MOVE","dir":"LEFT"}],
-    [{"type":"STAY"},{"type":"MOVE","dir":"LEFT"}],
-    [{"type":"MOVE","dir":"DOWN"},{"type":"MOVE","dir":"LEFT"}],
-    [{"type":"MOVE","dir":"RIGHT"},{"type":"MOVE","dir":"LEFT"}],
-    [{"type":"MOVE","dir":"RIGHT"},{"type":"DELIVERY","dir":"LEFT"}],
-    [{"type":"MOVE","dir":"RIGHT"},{"type":"STAY"}],
-    [{"type":"DELIVERY","dir":"RIGHT"},{"type":"STAY"}]
-]'''
 
 # api设置
 GAMELOAD = 'create_submission'
@@ -44,7 +29,7 @@ class AGV:
         self.payload = payload # 负载
         self.cap = cap    # 容积
         self.position = position
-        self.target = []
+        self.target = None
         self.path = []
     def update(self,payload,cap,position):
         self.payload = payload
@@ -115,20 +100,24 @@ def sort_map_data(mapdata,is_first):
     new_cargos = []
     for cargo in cargos:
         # 先判断是否存在坐标，若无坐标则去除
-        if 'x' in cargo.keys():
-            new_cargos.append(cargo)
-            cargo_id = cargo['id']
-            cargo_target = cargo['target']
-            # cargo_weight = cargo['weight']
+        new_cargos.append(cargo)
+        cargo_id = cargo['id']
+        cargo_target = cargo['target']
+        # cargo_weight = cargo['weight']
+        if 'x' not in cargo.keys():
+            cargo['x'] = None    
+            cargo['y'] = None
             cargo_position = (cargo['x'],cargo['y'])
             print(f"货物编号：{cargo_id}，目标：{cargo_target}，重量：1，位置：{cargo_position}")
     
     for shelf in shelves:
         shelf_id = shelf['id']
-        # shelf_cap = shelf['cap']
+        shelf_cap = shelf['cap']
         shelf_payload = shelf['payload']
         shelf_position = (shelf['x'],shelf['y'])
-        print(f"货架编号：{shelf_id}，cap：1，负载：{shelf_payload}，位置：{shelf_position}")
+        print(f"货架编号：{shelf_id}，cap：{shelf_cap}，负载：{shelf_payload}，位置：{shelf_position}")
+    
+    print()
     
     for wall in walls:
         x = wall['x']
@@ -166,18 +155,25 @@ if __name__ == "__main__":
         rows = map_attr['height']
         cols = map_attr['width']
         
+        # 初始化地图
+        map_grid = MapCreate.MapCreate(rows,cols,shelves,walls)
+        
         # 处理地图数据
         # 包括规划路线
         # agvs: id,payload,cap,(x,y),(target1,target2)
         # 这里是传入AGV_li 列表，然后改变AGV_li列表中的AGV目标
-        dis = Distribution.Distribution(AGV_li,cargos,shelves)
-        AGV_li = dis.target_finding()
+        dis = Distribution.Distribution(cargos,shelves)
+        # 更新数据，并且进行目标的寻找
+        dis.update(AGV_li,cargos,shelves)
+        AGV_li,is_change_path = dis.target_finding()
+        
+        # print(f'是否更新了目标：{is_change_path}')
         
         # 这里是通过AGV列表中的AGV类的目标进行路径规划，总共规划两条路线
         # 得到每个机器人的一个路线
         # 首先循环每个机器人的目标
         # 这里只能够先完成第一阶段的一个寻路
-        cbs = CBS.CBS(rows,cols,AGV_li,shelves,cargos,walls)
+        cbs = CBS.CBS(AGV_li,shelves,cargos,map_grid)
         AGV_li = cbs.solve()
             
         # 初始化步数
@@ -192,9 +188,12 @@ if __name__ == "__main__":
             for agv in AGV_li:
                 pathTrack = PathTrack.PathTrack(agv)
                 c = pathTrack.path_tracking()
+                if c['type'] == 'DELIVERY' or c['type'] == 'PICKUP':
+                    agv.target.pop(0)
+                    agv.path = []
                 command_li.append(c)
             
-            print(command_li)
+            # print(command_li)
             
             # 开始输出指令
             data = command(AGVCONTROL,command_li)
@@ -202,8 +201,11 @@ if __name__ == "__main__":
             # sort_map_data(data,False)
             
             # 判断是否已经完成地图
-            if data["value"]["done"] or step > 20:
-                break
+            try:
+                if data["value"]["done"] or step > 100:
+                    break
+            except:
+                print(f'数据为：{data}')
             
             # 首先进行数据的更新
             agvs,cargos,shelves = sort_map_data(data,False)
@@ -211,12 +213,22 @@ if __name__ == "__main__":
                 a = AGV_li[index]
                 a.update(agv['payload'],agv['cap'],(agv['x'],agv['y']))
             
+            # 完成后进行目标的重新选择
+            dis.update(AGV_li,cargos,shelves)
+            # print(f'cargos:{cargos}')
+            # print(f'shelves:{shelves}')
+            AGV_li,is_change_path = dis.target_finding()
+
+            '''for agv in AGV_li:
+                print(f'当前目标为：{agv.target}')
+                print(f'当前路径为：{agv.path}')'''
+            
+            # 如果目标发生了改变，则需要重新规划
             # 这个时候再进行一次路径规划，只进行货物到货柜的路径规划
-            cbs = CBS.CBS(rows,cols,AGV_li,shelves,cargos,walls)
+            cbs = CBS.CBS(AGV_li,shelves,cargos,map_grid)
             AGV_li = cbs.solve()
             
-            print(f'完成了一次规划')
-            # raise NameError()
+            # print(f'完成了一次规划')
             
             step += 1
     

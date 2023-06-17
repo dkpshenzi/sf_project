@@ -7,11 +7,11 @@ MAPSTART = 'start'
 AGVCONTROL = 'step'
 GAMEEND = 'finish_submission'
 
-DIRECTION = {"RIGHT":(1,0),"LEFT":(-1,0),"UP":(0,1),"DOWN":(0,-1)}
+DIRECTION = {"RIGHT":(1,0),"LEFT":(-1,0),"UP":(0,-1),"DOWN":(0,1)}
 
 class Judge:
     def __init__(self):
-        self.map_path = 'D:\Code\sf\sf_project\data\g4.json'
+        self.map_path = r'D:\Code\sf\sf_project\data\l3.json'
         # 读取文件
         with open(self.map_path,'r',encoding='utf-8') as f:
             self.all_data = json.load(f)
@@ -35,6 +35,21 @@ class Judge:
         for position in maps:
             if position['type'] == 'wall':
                 walls.append(position)
+                
+            if position['type'] == 'agv':
+                index = position['id']
+                agvs[index]['x'] = position['x']
+                agvs[index]['y'] = position['y']
+                
+            if position['type'] == 'shelf':
+                index = position['id']
+                shelves[index]['x'] = position['x']
+                shelves[index]['y'] = position['y']
+                
+            if position['type'] == 'cargo':
+                index = position['id']
+                cargos[index]['x'] = position['x']
+                cargos[index]['y'] = position['y']
                 
         self.j_draw.draw_point(agvs,shelves,cargos,walls)
     

@@ -56,7 +56,7 @@ class Astar:
         self.grid = grid
         # 定义四个方向
         # 添加一个原地的方向，让其能够停留在原地
-        self.directions = {'STAY':(0,0),'RIGHT':(self.gap,0),'UP':(0,self.gap),'LEFT':(-self.gap,0),'DOWN':(0,-self.gap)}
+        self.directions = {'STAY':(0,0),'RIGHT':(self.gap,0),'DOWN':(0,self.gap),'LEFT':(-self.gap,0),'UP':(0,-self.gap)}
         
     def inspire(self,neighbor_node,goal_node):
         """启发函数
@@ -71,7 +71,7 @@ class Astar:
         # 使用曼哈顿距离
         dx = abs(neighbor_node.position[0]-goal_node.position[0])
         dy = abs(neighbor_node.position[1]-goal_node.position[1])
-        return dx + dy
+        return (dx + dy) * 2
     
     def get_direction(self,current_node,parent_node):
         """获得父节点如何到子节点
@@ -126,7 +126,7 @@ class Astar:
             current_node = min(open_list,key=lambda node:node.f)
             
             # 输出当前点的路径
-            print_path(current_node)
+            # print_path(current_node)
             
             # 将当前节点从开放列表中移除
             open_list.remove(current_node)
@@ -215,6 +215,7 @@ class Astar:
                 # 将相邻节点加入开放列表
                 open_list.append(neighbor_node)
         # 没有找到路径，则返回空列表
+        print('找不到路径')
         return []
         
 def print_grid(grid,context):
@@ -222,51 +223,3 @@ def print_grid(grid,context):
     print(context)
     for g in newg:
         print(g)
-    
-def create_grids(rows,cols,start,goal,agvs,shelves,cargos,walls):
-    
-    # 0的地方代表的是空白，起点跟终点需要同时设为2
-    # 初始化地图
-    grid = []
-    for r in range(rows):
-        r_li = []
-        for c in range(cols):
-            r_li.append(0)
-        grid.append(r_li)
-    # print_grid(grid,'初始地图')
-        
-    # 机器人障碍物
-    for agv in agvs:
-        position = agv.position
-        grid[position[1]][position[0]] = 0
-    # 将自己本身的设置为2
-    grid[start[1]][start[0]] = 2
-    # print_grid(grid,'加入了机器人后的地图')
-    
-    # 货架障碍物
-    for shelf in shelves:
-        position = (shelf['x'],shelf['y'])
-        grid[position[1]][position[0]] = 1
-    # print_grid(grid,'加入了货架后的地图')
-    
-    # 货物障碍物
-    # 为判断器额外加的一个条件
-    if cargos:
-        for cargo in cargos:
-            if cargo['x'] != None:
-                position = (cargo['x'],cargo['y'])
-                grid[position[1]][position[0]] = 1
-    # print_grid(grid,'加入了货物后的地图')
-        
-    # 障碍物
-    if walls:
-        for wall in walls:
-            position = (wall['x'],wall['y'])
-            grid[position[1]][position[0]] = 1
-        
-    # 设置终点为0
-    grid[goal[1]][goal[0]] = 2
-    # print_grid(grid,'加入了障碍物后的地图')
-    
-    # 以上便把整个地图的格式给设置好了
-    return grid
