@@ -1,4 +1,5 @@
 import numpy as np
+from QuickSort import quicksort
 
 # 节点类
 class Node:
@@ -20,14 +21,14 @@ class Node:
         self.f = 0
         # 向子节点的方向
         self.next_direction = None
-        # 是否是枢纽
-        self.is_hub = False
     def get_f(self):
         """计算总代价
         """
         self.f = self.g + self.h
     def change_into_hub(self):
         self.is_hub = True
+    def get_value(self):
+        return self.f
     
 def print_path(node):
     path = []
@@ -71,7 +72,7 @@ class Astar:
         # 使用曼哈顿距离
         dx = abs(neighbor_node.position[0]-goal_node.position[0])
         dy = abs(neighbor_node.position[1]-goal_node.position[1])
-        return (dx + dy) * 2
+        return (dx + dy)
     
     def get_direction(self,current_node,parent_node):
         """获得父节点如何到子节点
@@ -116,7 +117,7 @@ class Astar:
         # 循环直到找到路径或者开放列表为空
         while open_list:
             # 从开放列表中找到代价最小的点
-            current_node = min(open_list,key=lambda node:node.f)
+            current_node = quicksort(open_list)[0]
             
             # 将当前节点从开放列表中移除
             open_list.remove(current_node)
@@ -180,8 +181,8 @@ class Astar:
                     continue
                 
                 # 计算相邻节点到目标节点的估计代价，用曼哈顿距离
-                # neighbor_node.h = self.inspire(neighbor_node,goal_node)
-                neighbor_node.h = 0
+                neighbor_node.h = self.inspire(neighbor_node,goal_node)
+                # neighbor_node.h = 0
                 
                 # 计算相邻节点的总代价
                 neighbor_node.get_f()
