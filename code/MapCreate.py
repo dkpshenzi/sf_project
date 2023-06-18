@@ -11,11 +11,11 @@ class MapCreate:
             grid.append(r_li)
             
         for shelf in shelves:
-            position = (shelf['x'],shelf['y'])
+            position = shelf.position
             grid[position[1]][position[0]] = 1
             
         for wall in walls:
-            position = (wall['x'],wall['y'])
+            position = wall.position
             grid[position[1]][position[0]] = 1
 
         self.grid = grid

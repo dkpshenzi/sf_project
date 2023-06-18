@@ -1,26 +1,27 @@
 import Astar
 from copy import deepcopy
+from QuickSort import quicksort
 
 class Node:
     def __init__(self,constraints,solution,cost):
         self.constraints = constraints
         self.solution = solution
         self.cost = cost
+    def get_value(self):
+        return self.cost
 
 class CBS:
-    def __init__(self,agvs,shelves,cargos,map_grid):
+    def __init__(self,agvs,map_grid):
         # 传入智能体，这个智能体是每个机器人的列表
         # 包含每个智能体的当前坐标和目标坐标
         self.agvs = agvs
-        self.shelves = shelves
-        self.cargos = cargos
         self.map_grid = map_grid
         
     def find_path(self,restrict=None):     
         # 寻找路径取的是机器人的暂时目标
         paths = []
         for index,agv in enumerate(self.agvs):
-            if agv.temp_target == []:
+            if agv.target == []:
                 paths.append([])
                 continue
             
@@ -30,7 +31,7 @@ class CBS:
                     if res['id'] == index:
                         new_restrict.append(res)
             # 机器人当前的目标
-            target = agv.temp_target[0]
+            target = agv.target[0]
             
             # 首先地图栅格化
             grid = self.map_grid.create_new_grid(self.cargos,agv.position,target)
@@ -139,27 +140,20 @@ class CBS:
         return []
         
     def solve(self):
-        # 首先更新机器人的暂时坐标
-        for agv in self.agvs:
-            agv.temp_target = agv.target
-        
         # 首先进行一次代价最小的路径搜索，即是不考虑任何的碰撞和冲突
         min_paths = self.find_path()
-        # print(f'当前的路径解决方案：{min_paths}')
         
         min_value = self.cal_value(min_paths,[])
-        # print(f'当前的最小代价{min_value}')
         
         # 定义一个根节点
         root = Node([],min_paths,min_value)
         
         # 定义一个开放列表
         open_list = [root]
-        closed_list = []
         
         while open_list:
             # 从开放列表中找到代价最小的一个
-            current_node = min(open_list,key=lambda node:node.cost)
+            current_node = quicksort(open_list)[0]
             
             '''print(f'当前约束条件为：')
             for c in current_node.constraints:
@@ -175,9 +169,6 @@ class CBS:
             
             # 将当前节点从开放列表中移除
             open_list.remove(current_node)
-
-            # 将当前节点加入关闭列表
-            closed_list.append(current_node)
 
             # 判断其中是否存在冲突
             result = self.find_conflict(current_node.solution)
@@ -236,9 +227,6 @@ class CBS:
                     # 创建该约束下的节点
                     child_node = Node(end_restrict,re_path,cost)
                     
-                    # 忽略已经在关闭列表中的节点
-                    if child_node.solution in list(map(lambda node:node.solution,closed_list)):
-                        continue
                     # 如果该节点已经存在于开放列表中，且当前的路径代价更大，则忽略
                     if any(
                         child_node.solution == node.solution and child_node.cost >= node.cost  
